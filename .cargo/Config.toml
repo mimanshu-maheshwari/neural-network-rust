@@ -1,0 +1,16 @@
+[alias]
+	b="build"
+	c="check"
+	d="doc"
+	t="test"
+	r="run"
+	rr = "run --release"
+	rm="remove"
+	br="build --release"
+
+#[build]
+#	target=["x86_64-unknown-linux-musl", "x86_64-pc-windows-gnu"]
+
+#[target.x86_64-unknown-linux-musl]
+#	linker="rust-lld"
+

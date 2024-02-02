@@ -1,0 +1,9 @@
+/target
+Cargo.lock
+/notes/*.aux
+/notes/*.fdb_latexmk
+/notes/*.fls
+/notes/*.gz
+/notes/*.log
+!/notes/*.md
+!/notes/*.tex

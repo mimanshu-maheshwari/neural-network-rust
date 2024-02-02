@@ -1,0 +1,19 @@
+[package]
+name = "mm-nn"
+version = "0.1.0"
+edition = "2021"
+default-run = "mm-nn"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "0.8"
+
+[[bin]]
+name = "double"
+path = "src/double.rs"
+
+[[bin]]
+name = "mm-nn"
+path = "src/main.rs"
+
