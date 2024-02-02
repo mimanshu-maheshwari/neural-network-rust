@@ -11,7 +11,7 @@ rand = "0.8"
 
 [[bin]]
 name = "double"
-path = "src/double.rs"
+path = "src/bin/double.rs"
 
 [[bin]]
 name = "mm-nn"
