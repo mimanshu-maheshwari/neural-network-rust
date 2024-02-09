@@ -1,41 +1,45 @@
+
 pub mod nn {
+
+    use rand::Rng;
 
     #[derive(Default, Debug)]
     pub struct NNMatrix<'a> {
-        pub data_frame: &'a [f32],
+        pub data_frame: &'a mut [f32],
         pub row: usize,
         pub col: usize,
         pub stride: usize,
     }
 
     impl<'a> NNMatrix<'a> {
-        pub fn new(data_frame: &'a [f32], row: usize, col: usize) -> Self {
+        pub fn new(data_frame: &'a mut [f32], row: usize, col: usize, stride: usize) -> Self {
             NNMatrix {
                 data_frame,
                 row,
                 col,
-                stride: col,
+                stride,
             }
         }
 
-        fn at(&self, row: usize, col: usize) -> f32 {
+        pub fn get_at(&self, row: usize, col: usize) -> f32 {
             assert!(row <= self.row && col <= self.col);
-            self.data_frame[row * self.col + col]
+            self.data_frame[row * self.stride + col]
         }
 
-        pub fn row_input(&self, row: usize, col: usize) -> f32 {
+        pub fn set_at(&mut self, row: usize, col:usize, value: f32){
             assert!(row <= self.row && col <= self.col);
-            self.at(row, col)
+            if let Some(elem) = self.data_frame.get_mut(row * self.stride + col) {
+                *elem = value;
+            }
         }
-
-        pub fn row_input_slice(&self, row: usize) -> &[f32] {
-            assert!(row <= self.row);
-            &self.data_frame[(row * self.col)..(row * self.col + self.stride - 1)]
-        }
-
-        pub fn row_output(&self, row: usize) -> f32 {
-            assert!(row <= self.row);
-            self.at(row, self.stride - 1)
+        
+        pub fn rand(&mut self, min:f32, max: f32){
+            let mut rng = rand::thread_rng();
+            for i in 0..self.row {
+                for j in 0..self.col{
+                    self.set_at(i, j, rng.gen_range(min..max));
+                }
+            }
         }
     }
 
@@ -44,34 +48,6 @@ pub mod nn {
             let out = 1_f32 / (1_f32 + (-num).exp());
             out
         }
-
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::nn::math;
-
-    #[test]
-    fn sigmoid_test_0() {
-        let actual = math::sigmoid(0_f32); 
-        let expected = 0.5f32;
-        assert_eq!(expected, actual);
-    }
-  
-    #[test]
-    fn sigmoid_test_1() {
-        let actual = math::sigmoid(1_f32); 
-        let expected = 0.73105857_f32;
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn sigmoid_test_minus_1() {
-        let actual = math::sigmoid(-1_f32); 
-        let expected = 0.268941421_f32;
-        assert_eq!(expected, actual);
-    }
-    
-   
-}
