@@ -7,3 +7,5 @@ Cargo.lock
 /notes/*.log
 !/notes/*.md
 !/notes/*.tex
+src/C*
+src/bin/C*
