@@ -169,14 +169,14 @@ pub mod nn {
     impl fmt::Display for NNMatrix {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
             assert!(self.row * self.col <= self.data_frame.len());
-            writeln!(f, "--").unwrap();
+            writeln!(f, "-- {row} rows, {col} columns --", row = self.row, col = self.col).unwrap();
             for row in 0..self.row {
                 for col in 0..self.col {
                     write!(f, " {num}", num = self.get_at(row, col)).unwrap();
                 }
                 writeln!(f, "").unwrap();
             }
-            writeln!(f, "--").unwrap();
+            writeln!(f, "-------------------------------").unwrap();
             Ok(())
         }
     }

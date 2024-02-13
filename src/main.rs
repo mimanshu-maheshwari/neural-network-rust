@@ -1,5 +1,6 @@
 use mm_nn::nn::NNMatrix;
 fn main(){
-    let nn_mat = NNMatrix::empty(3, 2);
-    print!("nn: {nn_mat}");
+    let a = NNMatrix::empty(3, 2);
+    let b = NNMatrix::empty(2, 3);
+    print!("{a}\n{b}");
 }
