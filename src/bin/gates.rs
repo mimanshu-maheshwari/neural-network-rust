@@ -42,6 +42,8 @@ fn main() {
     check_output(&mut model, &df_input, &df_output);
 }
 
+/// use finite difference method to create gradient value 
+/// cost = lim(x -> 0) {f(w + h) - f(w) / h}
 fn finite_diff(
     model: &mut NNArch,
     gradient: &mut NNArch,
@@ -90,6 +92,9 @@ fn finite_diff(
     }
 }
 
+/// use the gradient to change the values of model.
+/// model(w_n) -= gradient(w_n) * rate
+/// model(b_n) -= gradient(b_n) * rate
 fn learn(model: &mut NNArch, gradient: &NNArch, rate: T) {
     for i in 0..model.w1.row {
         for j in 0..model.w1.col {
