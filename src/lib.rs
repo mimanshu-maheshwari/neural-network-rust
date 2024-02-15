@@ -1,13 +1,13 @@
-pub type T = f32;
 
 pub mod nn {
 
-    use super::T;
+    pub type T = f32;
+
     use rand::Rng;
     use std::fmt;
-    use std::ops::{Add, Mul};
+    use std::ops::{Add, AddAssign, Mul, MulAssign};
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct NNMatrix {
         pub data_frame: Box<[T]>,
         pub row: usize,
@@ -59,7 +59,7 @@ pub mod nn {
         }
 
         pub fn get_mut_at(&mut self, row: usize, col: usize) -> &mut T {
-            assert!(row <= self.row && col <= self.col);
+            assert!(row * self.stride + col < self.data_frame.len());
             &mut self.data_frame[row * self.stride + col]
         }
 
@@ -70,7 +70,7 @@ pub mod nn {
             }
         }
 
-        pub fn rand(&mut self, min: T, max: T) {
+        pub fn rand_range(&mut self, min: T, max: T) {
             let mut rng = rand::thread_rng();
             for i in 0..self.row {
                 for j in 0..self.col {
@@ -79,31 +79,72 @@ pub mod nn {
             }
         }
 
-        pub fn product(&self, b: &NNMatrix, c: &mut NNMatrix) {
-            let a: &NNMatrix = self;
-            let n = a.col;
-            let row = a.row;
-            let col = b.col;
-            assert!(a.col == b.row && a.row == c.row && b.col == c.col);
-            for i in 0..row {
-                for j in 0..col {
-                    for k in 0..n {
-                        *c.get_mut_at(i, j) += a.get_at(i, k) * b.get_at(k, j);
-                    }
+        pub fn rand(&mut self) {
+            let mut rng = rand::thread_rng();
+            for i in 0..self.row {
+                for j in 0..self.col {
+                    self.set_at(i, j, rng.gen_range(0.0..1.0));
                 }
             }
         }
+
+        // pub fn product(&self, b: &NNMatrix, c: &mut NNMatrix) {
+        //     let a: &NNMatrix = self;
+        //     let n = a.col;
+        //     let row = a.row;
+        //     let col = b.col;
+        //     assert!(a.col == b.row && a.row == c.row && b.col == c.col);
+        //     for i in 0..row {
+        //         for j in 0..col {
+        //             for k in 0..n {
+        //                 *c.get_mut_at(i, j) += a.get_at(i, k) * b.get_at(k, j);
+        //             }
+        //         }
+        //     }
+        // }
 
         /// allocate contiguous space on heap for array.
         fn alloc(row: usize, col: usize) -> Box<[T]> {
             let v: Vec<T> = vec![0 as T; row * col];
             v.into_boxed_slice()
         }
+
+        pub fn get_row(&self, row: usize) -> Box<[T]> {
+            let row = row * self.stride;
+            self.data_frame[row..row + self.col]
+                .to_owned()
+                .into_boxed_slice()
+        }
+
+        pub fn copy_row_to(&self, to: &mut NNMatrix, row: usize) {
+            assert!(to.col == self.col);
+            for i in 0..self.col {
+                *to.get_mut_at(row, i) = self.get_at(row, i);
+            }
+        }
+
+        pub fn copy_row_from(&mut self, from: &NNMatrix, row: usize) {
+            assert!(from.col == self.col);
+            for i in 0..self.col {
+                *self.get_mut_at(0, i) = from.get_at(row, i);
+            }
+        }
+
+        pub fn sigmoid(&mut self) {
+            for i in 0..self.row {
+                for j in 0..self.col {
+                    *self.get_mut_at(i, j) = sigmoid(self.get_at(i, j));
+                }
+            }
+        }
     }
 
+    // ====================== arithmetic ops start ==================================== //
+    // ---------------------- product ------------------------------------ //
+
     /// scaler product
-    impl Mul<T> for NNMatrix {
-        type Output = Self;
+    impl Mul<T> for &NNMatrix {
+        type Output = NNMatrix;
         fn mul(self, b: T) -> NNMatrix {
             let row = self.row;
             let col = self.col;
@@ -116,10 +157,31 @@ pub mod nn {
             c
         }
     }
+    /// dot product
+    impl Mul<&NNMatrix> for &NNMatrix {
+        type Output = NNMatrix;
+        fn mul(self, b: &NNMatrix) -> Self::Output {
+            let mut c = NNMatrix::empty(self.row, b.col);
+            assert!(self.col == b.row);
+            assert!(self.row == c.row);
+            assert!(b.col == c.col);
+            let n = self.col;
+            let row = self.row;
+            let col = b.col;
+            for i in 0..row {
+                for j in 0..col {
+                    for k in 0..n {
+                        *c.get_mut_at(i, j) += self.get_at(i, k) * b.get_at(k, j);
+                    }
+                }
+            }
+            c
+        }
+    }
 
     /// dot product
-    impl Mul<NNMatrix> for NNMatrix {
-        type Output = Self;
+    impl Mul<NNMatrix> for &NNMatrix {
+        type Output = NNMatrix;
         fn mul(self, b: NNMatrix) -> Self::Output {
             let mut c = NNMatrix::empty(self.row, b.col);
             assert!(self.col == b.row && self.row == c.row && b.col == c.col);
@@ -136,10 +198,73 @@ pub mod nn {
             c
         }
     }
+    // ---------------------- product assign ------------------------------------ //
 
+    /// scaler product assign
+    impl MulAssign<T> for NNMatrix {
+        fn mul_assign(&mut self, b: T) {
+            let row = self.row;
+            let col = self.col;
+            for i in 0..row {
+                for j in 0..col {
+                    *self.get_mut_at(i, j) *= b;
+                }
+            }
+        }
+    }
+
+    /// dot product assign
+    impl MulAssign<NNMatrix> for NNMatrix {
+        fn mul_assign(&mut self, b: NNMatrix) {
+            let mut c = NNMatrix::empty(self.row, b.col);
+            assert!(self.col == b.row && self.row == c.row && b.col == c.col);
+            let n = self.col;
+            let row = self.row;
+            let col = b.col;
+            for i in 0..row {
+                for j in 0..col {
+                    for k in 0..n {
+                        *c.get_mut_at(i, j) += self.get_at(i, k) * b.get_at(k, j);
+                    }
+                }
+            }
+            for i in 0..row {
+                for j in 0..col {
+                    *self.get_mut_at(i, j) = c.get_at(i, j);
+                }
+            }
+            drop(c);
+        }
+    }
+
+    /// dot product assign
+    impl MulAssign<&NNMatrix> for NNMatrix {
+        fn mul_assign(&mut self, b: &NNMatrix) {
+            let mut c = NNMatrix::empty(self.row, b.col);
+            assert!(self.col == b.row && self.row == c.row && b.col == c.col);
+            let n = self.col;
+            let row = self.row;
+            let col = b.col;
+            for i in 0..row {
+                for j in 0..col {
+                    for k in 0..n {
+                        *c.get_mut_at(i, j) += self.get_at(i, k) * b.get_at(k, j);
+                    }
+                }
+            }
+            for i in 0..row {
+                for j in 0..col {
+                    *self.get_mut_at(i, j) = c.get_at(i, j);
+                }
+            }
+            drop(c);
+        }
+    }
+
+    // ---------------------- addition ------------------------------------ //
     /// scaler addition
-    impl Add<T> for NNMatrix {
-        type Output = Self;
+    impl Add<T> for &NNMatrix {
+        type Output = NNMatrix;
         fn add(self, b: T) -> Self::Output {
             let mut c = NNMatrix::empty(self.row, self.col);
             for i in 0..self.row {
@@ -152,10 +277,11 @@ pub mod nn {
     }
 
     /// matrix addition
-    impl Add<NNMatrix> for NNMatrix {
-        type Output = Self;
+    impl Add<NNMatrix> for &NNMatrix {
+        type Output = NNMatrix;
         fn add(self, b: NNMatrix) -> Self::Output {
-            assert!(self.col == b.col && self.row == b.row);
+            assert!(self.col == b.col);
+            assert!(self.row == b.row);
             let mut c = NNMatrix::empty(self.row, self.col);
             for i in 0..self.row {
                 for j in 0..self.col {
@@ -166,10 +292,56 @@ pub mod nn {
         }
     }
 
+    // ---------------------- addition assign ------------------------------------ //
+    /// matrix add assign
+    impl AddAssign<NNMatrix> for NNMatrix {
+        fn add_assign(&mut self, rhs: NNMatrix) {
+            assert!(self.col == rhs.col);
+            assert!(self.row == rhs.row);
+            for i in 0..self.row {
+                for j in 0..self.col {
+                    *self.get_mut_at(i, j) += rhs.get_at(i, j);
+                }
+            }
+        }
+    }
+
+    /// matrix add assign
+    impl AddAssign<&NNMatrix> for NNMatrix {
+        fn add_assign(&mut self, rhs: &NNMatrix) {
+            assert!(self.col == rhs.col);
+            assert!(self.row == rhs.row);
+            for i in 0..self.row {
+                for j in 0..self.col {
+                    *self.get_mut_at(i, j) += rhs.get_at(i, j);
+                }
+            }
+        }
+    }
+
+    /// scaler matrix add assign
+    impl AddAssign<T> for NNMatrix {
+        fn add_assign(&mut self, rhs: T) {
+            for i in 0..self.row {
+                for j in 0..self.col {
+                    *self.get_mut_at(i, j) += rhs;
+                }
+            }
+        }
+    }
+    // ====================== arithmetic ops end ==================================== //
+
+    // ====================== display trait start ==================================== //
     impl fmt::Display for NNMatrix {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
             assert!(self.row * self.col <= self.data_frame.len());
-            writeln!(f, "-- {row} rows, {col} columns --", row = self.row, col = self.col).unwrap();
+            writeln!(
+                f,
+                "-- {row} rows, {col} columns --",
+                row = self.row,
+                col = self.col
+            )
+            .unwrap();
             for row in 0..self.row {
                 for col in 0..self.col {
                     write!(f, " {num}", num = self.get_at(row, col)).unwrap();
@@ -180,14 +352,63 @@ pub mod nn {
             Ok(())
         }
     }
+    // ====================== display trait end ==================================== //
 
-    pub mod math {
+    #[derive(Debug, Clone)]
+    pub struct NNArch {
+        // /// activation layers
+        // al: Box<[NNMatrix]>,
+        // /// weights layers
+        // wl: Box<[NNMatrix]>,
+        // /// biases layers
+        // bl: Box<[NNMatrix]>,
 
-        use super::T;
+        // input
+        pub a0: NNMatrix,
+
+        // layer 1
+        pub w1: NNMatrix,
+        pub b1: NNMatrix,
+        pub a1: NNMatrix,
+
+        // layer 2
+        pub w2: NNMatrix,
+        pub b2: NNMatrix,
+        pub a2: NNMatrix,
+    }
+
+    impl NNArch {
+        pub fn new() -> Self {
+            let a0: NNMatrix = NNMatrix::empty(1, 2);
+
+            let mut w1: NNMatrix = NNMatrix::empty(2, 2);
+            let mut b1: NNMatrix = NNMatrix::empty(1, 2);
+            let a1: NNMatrix = NNMatrix::empty(1, 2);
+
+            let mut w2: NNMatrix = NNMatrix::empty(2, 1);
+            let mut b2: NNMatrix = NNMatrix::empty(1, 1);
+            let a2: NNMatrix = NNMatrix::empty(1, 1);
+
+            w1.rand();
+            b1.rand();
+
+            w2.rand();
+            b2.rand();
+
+            NNArch {
+                a0,
+                w1,
+                b1,
+                a1,
+                w2,
+                b2,
+                a2,
+            }
+        }
+    }
 
         pub fn sigmoid(num: T) -> T {
             let out = (1 as T) / ((1 as T) + (-num).exp());
             out
-        }
     }
 }

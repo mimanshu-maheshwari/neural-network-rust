@@ -26,16 +26,16 @@ fn main() -> Result<()> {
         // finite difference =  lim h->0 (cost(a + h) - cost(a))/ h
         let cost = calc_cost(&w, &b, &data_frame);
         println!("{i}: cost={cost}"); //, w={w}, b={b}");
-        let finite_diff_w: f32 = (calc_cost(&(w + eps), &b, &data_frame) - cost)/ eps;
-        let finite_diff_b: f32 = (calc_cost(&w, &(b + eps), &data_frame) - cost)/ eps;
+        let finite_diff_w: f32 = (calc_cost(&(w + eps), &b, &data_frame) - cost) / eps;
+        let finite_diff_b: f32 = (calc_cost(&w, &(b + eps), &data_frame) - cost) / eps;
         w -= rate * finite_diff_w;
         b -= rate * finite_diff_b;
     }
     println!("--------------------------");
 
     for data in data_frame {
-        let expected_output = data[1]; 
-        let actual_output = data[0] * w + b; 
+        let expected_output = data[1];
+        let actual_output = data[0] * w + b;
         println!("expected: {expected_output} -> actual: {actual_output}");
     }
 
