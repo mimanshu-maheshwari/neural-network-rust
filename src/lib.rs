@@ -1,4 +1,3 @@
-
 pub mod nn {
 
     pub type T = f32;
@@ -405,10 +404,114 @@ pub mod nn {
                 a2,
             }
         }
+
+        /// use finite difference method to create gradient value
+        /// cost = lim(x -> 0) {f(w + h) - f(w) / h}
+        pub fn finite_diff(
+            &mut self,
+            gradient: &mut NNArch,
+            df_input: &NNMatrix,
+            df_output: &NNMatrix,
+            eps: T,
+        ) {
+            let mut saved: T;
+
+            let cost = self.calc_cost(df_input, df_output);
+
+            for i in 0..self.w1.row {
+                for j in 0..self.w1.col {
+                    saved = self.w1.get_at(i, j);
+                    *self.w1.get_mut_at(i, j) += eps;
+                    *gradient.w1.get_mut_at(i, j) =
+                        (self.calc_cost(df_input, df_output) - cost) / eps;
+                    *self.w1.get_mut_at(i, j) = saved;
+                }
+            }
+
+            for i in 0..self.b1.row {
+                for j in 0..self.b1.col {
+                    saved = self.b1.get_at(i, j);
+                    *self.b1.get_mut_at(i, j) += eps;
+                    *gradient.b1.get_mut_at(i, j) =
+                        (self.calc_cost(df_input, df_output) - cost) / eps;
+                    *self.b1.get_mut_at(i, j) = saved;
+                }
+            }
+
+            for i in 0..self.w2.row {
+                for j in 0..self.w2.col {
+                    saved = self.w2.get_at(i, j);
+                    *self.w2.get_mut_at(i, j) += eps;
+                    *gradient.w2.get_mut_at(i, j) =
+                        (self.calc_cost(df_input, df_output) - cost) / eps;
+                    *self.w2.get_mut_at(i, j) = saved;
+                }
+            }
+
+            for i in 0..self.b2.row {
+                for j in 0..self.b2.col {
+                    saved = self.b2.get_at(i, j);
+                    *self.b2.get_mut_at(i, j) += eps;
+                    *gradient.b2.get_mut_at(i, j) =
+                        (self.calc_cost(df_input, df_output) - cost) / eps;
+                    *self.b2.get_mut_at(i, j) = saved;
+                }
+            }
+        }
+
+        /// use the gradient to change the values of model.
+        /// model(w_n) -= gradient(w_n) * rate
+        /// model(b_n) -= gradient(b_n) * rate
+        pub fn learn(&mut self, gradient: &NNArch, rate: T) {
+            for i in 0..self.w1.row {
+                for j in 0..self.w1.col {
+                    *self.w1.get_mut_at(i, j) -= rate * gradient.w1.get_at(i, j);
+                }
+            }
+
+            for i in 0..self.b1.row {
+                for j in 0..self.b1.col {
+                    *self.b1.get_mut_at(i, j) -= rate * gradient.b1.get_at(i, j);
+                }
+            }
+
+            for i in 0..self.w2.row {
+                for j in 0..self.w2.col {
+                    *self.w2.get_mut_at(i, j) -= rate * gradient.w2.get_at(i, j);
+                }
+            }
+
+            for i in 0..self.b2.row {
+                for j in 0..self.b2.col {
+                    *self.b2.get_mut_at(i, j) -= rate * gradient.b2.get_at(i, j);
+                }
+            }
+        }
+
+        pub fn forward(&mut self) {
+            self.a1 = &self.a0 * &self.w1;
+            self.a1 += &self.b1;
+            self.a1.sigmoid();
+            self.a2 = &self.a1 * &self.w2;
+            self.a2 += &self.b2;
+            self.a2.sigmoid();
+        }
+
+        pub fn calc_cost(&mut self, df_input: &NNMatrix, df_output: &NNMatrix) -> T {
+            let mut cost: T = 0.0;
+            for i in 0..df_input.row {
+                self.a0.copy_row_from(df_input, i);
+                self.forward();
+                let result: T = self.a2.get_at(0, 0);
+                let o0: T = df_output.get_at(i, 0);
+                cost += (o0 - result) * (o0 - result);
+            }
+            cost / (df_input.row as T)
+        }
     }
 
-        pub fn sigmoid(num: T) -> T {
-            let out = (1 as T) / ((1 as T) + (-num).exp());
-            out
+    pub fn sigmoid(num: T) -> T {
+        let out = (1 as T) / ((1 as T) + (-num).exp());
+        out
     }
 }

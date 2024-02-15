@@ -1,14 +1,19 @@
-# Create a NN that morphs images: 
+# Create a NN that morphs images:
 
-## Create a basic NN 
-- a nn which acts like multiplier of 2
-	- [x] test data
-	- [x] cost function
-	- [x] rate and epsilon ε
-	- [x] finite differences
-- a nn which acts like gates.
-	- [x] and, or gate are one neuron 
-	- zor gate is 2 input neuron 
-- create a library to handle nn
-- add sigmoid to cost function 
-- create derivates for feed forward and back propogation
+## Create a basic NN
+
+- [x] a nn which acts like multiplier of 2
+  - [x] test data
+  - [x] cost function
+  - [x] rate and epsilon ε
+  - [x] finite differences
+- [x] a nn which acts like gates.
+  - [x] and, or gate are one neuron
+  - [x] zor gate is 2 input neuron
+- [x] add sigmoid to cost function
+- [ ] create a library to handle nn
+  - [x] create NNMatrix
+  - [ ] create NNArch
+    - [ ] create NNArch with just a few parameters (Abstraction of logic)
+    - [ ] move the learn(), finite_diff(), calc_cost() functions to lib
+- [ ] create derivates for feed forward and back propogation
