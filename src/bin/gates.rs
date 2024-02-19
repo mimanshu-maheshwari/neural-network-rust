@@ -28,9 +28,9 @@ fn main() {
 
     let layer_arch: Vec<usize> = vec![2, 2, 1];
 
-    let mut model = NNArch::new(&layer_arch[..]);
+    let mut model = NNArch::create(&layer_arch[..]);
     model.randomize();
-    let mut gradient = NNArch::new(&layer_arch[..]);
+    let mut gradient = NNArch::create(&layer_arch[..]);
 
     println!("input: {df_input}output: {df_output}");
     println!("model: {model}");

@@ -1,6 +1,5 @@
-use mm_nn::nn::NNMatrix;
+use mm_nn::nn::NNArch;
 fn main() {
-    let a = NNMatrix::empty(3, 2);
-    let b = NNMatrix::empty(2, 3);
-    print!("{a}\n{b}");
+    let a: NNArch = NNArch::create(&vec![28 * 28, 16, 16, 10][..]);
+    print!("{a}");
 }

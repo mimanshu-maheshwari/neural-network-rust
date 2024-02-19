@@ -348,7 +348,7 @@ pub mod nn {
                     } else {
                         ""
                     };
-                    write!(f, "{prefix}{num:010.6}{postfix}", num = self.get_at(row, col)).unwrap();
+                    write!(f, "{prefix}{num:07.6}{postfix}", num = self.get_at(row, col)).unwrap();
                 }
                 writeln!(f, "").unwrap();
             }
@@ -391,7 +391,7 @@ pub mod nn {
     impl NNArch {
         /// layer_arch will have first layer as input column size, then multiple hiden layers size
         /// and last layer will be output layer size.
-        pub fn new(layer_arch: &[usize]) -> Self {
+        pub fn create(layer_arch: &[usize]) -> Self {
             println!("{layer_arch:?}");
             assert!(layer_arch.len() >= 2);
             let layer_count = layer_arch.len() - 1;
