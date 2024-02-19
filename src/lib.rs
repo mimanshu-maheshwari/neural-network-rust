@@ -526,10 +526,10 @@ pub mod nn {
                 self.al[0].copy_row_from(df_input, i);
                 self.forward();
                 println!(
-                    "{input:?}: {actual} | {expected}",
+                    "{input:?}: {actual:?} | {expected:?}",
                     input = df_input.get_row(i),
-                    actual = self.al[self.layer_count].get_at(0, 0),
-                    expected = df_output.get_at(i, 0)
+                    actual = self.al[self.layer_count].get_row(0),
+                    expected = df_output.get_row(i)
                 );
             }
         }
