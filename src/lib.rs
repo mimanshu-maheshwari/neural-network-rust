@@ -338,17 +338,14 @@ pub mod nn {
             writeln!(f, "").unwrap();
             for row in 0..self.rows {
                 for col in 0..self.cols {
-                    let prefix = if col == 0 {
-                        "  |"
-                    } else {
-                        ","
-                    };
-                    let postfix = if col + 1 == self.cols{
-                        "|"
-                    } else {
-                        ""
-                    };
-                    write!(f, "{prefix}{num:-9.6}{postfix}", num = self.get_at(row, col)).unwrap();
+                    let prefix = if col == 0 { "  |" } else { "," };
+                    let postfix = if col + 1 == self.cols { "|" } else { "" };
+                    write!(
+                        f,
+                        "{prefix}{num:-9.6}{postfix}",
+                        num = self.get_at(row, col)
+                    )
+                    .unwrap();
                 }
                 writeln!(f, "").unwrap();
             }
@@ -373,7 +370,6 @@ pub mod nn {
         /// biases layers
         /// the amount of biases will be number of layers
         pub bl: Box<[NNMatrix]>,
-        
         // input
         // pub a0: NNMatrix,
 
@@ -538,19 +534,18 @@ pub mod nn {
             }
         }
     }
-    impl fmt::Display for NNArch{
+    impl fmt::Display for NNArch {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-            writeln!(f, "").unwrap(); 
+            writeln!(f, "").unwrap();
             for i in 0..self.layer_count {
                 write!(f, "wl{i}:").unwrap();
-                writeln!(f, "{layer}", layer=self.wl[i]).unwrap();
+                writeln!(f, "{layer}", layer = self.wl[i]).unwrap();
                 write!(f, "bl{i}:").unwrap();
-                writeln!(f, "{layer}", layer=self.bl[i]).unwrap();
+                writeln!(f, "{layer}", layer = self.bl[i]).unwrap();
             }
             Ok(())
         }
     }
- 
 
     pub fn sigmoid(num: T) -> T {
         let out = (1 as T) / ((1 as T) + (-num).exp());

@@ -7,9 +7,9 @@ fn main() {
     println!("Running {program_name}");
 
     // number of iterations
-    let iters:usize =match args.next() { 
-        Some(value) => value.parse::<usize>().unwrap_or(1000), 
-        None => 10000
+    let iters: usize = match args.next() {
+        Some(value) => value.parse::<usize>().unwrap_or(1000),
+        None => 10000,
     };
 
     let _and_data_frame: Vec<T> = vec![0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0];
@@ -19,9 +19,9 @@ fn main() {
     // training data
     let td = _xor_data_frame;
     // learning rate
-    let rate:T = 1e-1;
+    let rate: T = 1e-1;
     // ε epsilon (limit that tends to 0)
-    let eps:T = 1e-1;
+    let eps: T = 1e-1;
 
     let df_input: NNMatrix = NNMatrix::new(Some(&td[..]), 4, 2, 3);
     let df_output: NNMatrix = NNMatrix::new(Some(&td[2..]), 4, 1, 3);
