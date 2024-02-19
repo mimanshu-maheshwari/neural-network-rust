@@ -348,7 +348,7 @@ pub mod nn {
                     } else {
                         ""
                     };
-                    write!(f, "{prefix}{num:07.6}{postfix}", num = self.get_at(row, col)).unwrap();
+                    write!(f, "{prefix}{num:-9.6}{postfix}", num = self.get_at(row, col)).unwrap();
                 }
                 writeln!(f, "").unwrap();
             }
