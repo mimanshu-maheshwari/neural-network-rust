@@ -32,8 +32,8 @@ fn main() {
     model.randomize();
     let mut gradient = NNArch::new(&layer_arch[..]);
 
-    println!("input: {df_input}\n\noutput: {df_output}\n");
-    println!("model: {model:?}\n\ngradient: {gradient:?}\n");
+    println!("input: {df_input}output: {df_output}");
+    println!("model: {model}");
     println!(
         "initial cost: {cost}",
         cost = model.calc_cost(&df_input, &df_output)
