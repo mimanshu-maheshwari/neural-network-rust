@@ -11,9 +11,9 @@
   - [x] and, or gate are one neuron
   - [x] zor gate is 2 input neuron
 - [x] add sigmoid to cost function
-- [ ] create a library to handle nn
+- [x] create a library to handle nn
   - [x] create NNMatrix
-  - [ ] create NNArch
-    - [ ] create NNArch with just a few parameters (Abstraction of logic)
-    - [ ] move the learn(), finite_diff(), calc_cost() functions to lib
+  - [x] create NNArch
+    - [x] create NNArch with just a few parameters (Abstraction of logic)
+    - [x] move the learn(), finite_diff(), calc_cost() functions to lib
 - [ ] create derivates for feed forward and back propogation
