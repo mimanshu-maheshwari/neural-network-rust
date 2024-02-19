@@ -4,13 +4,14 @@ pub mod nn {
 
     use rand::Rng;
     use std::fmt;
+    use std::ops;
     use std::ops::{Add, AddAssign, Mul, MulAssign};
 
-    #[derive(Debug, PartialEq, Clone)]
+    #[derive(Debug, PartialEq)]
     pub struct NNMatrix {
         pub data_frame: Box<[T]>,
-        pub row: usize,
-        pub col: usize,
+        pub rows: usize,
+        pub cols: usize,
         pub stride: usize,
     }
 
@@ -22,7 +23,7 @@ pub mod nn {
         ///     Here first index value is input a second in input b and third is output create
         ///     this create for rows.
         ///     Here stride is 3 as a complete row is of size 3
-        pub fn new(df: Option<&[T]>, row: usize, col: usize, stride: usize) -> Self {
+        pub fn new(df: Option<&[T]>, rows: usize, cols: usize, stride: usize) -> Self {
             let data_frame: Box<[T]>;
             if let Some(df) = df {
                 data_frame = df
@@ -31,29 +32,29 @@ pub mod nn {
                     .collect::<Vec<T>>()
                     .into_boxed_slice();
             } else {
-                data_frame = NNMatrix::alloc(row, col);
+                data_frame = NNMatrix::alloc(rows, cols);
             }
             NNMatrix {
                 data_frame,
-                row,
-                col,
+                rows,
+                cols,
                 stride,
             }
         }
 
         /// create a empty matrix of 0 for rows and columns
-        pub fn empty(row: usize, col: usize) -> Self {
-            let data_frame = NNMatrix::alloc(row, col);
+        pub fn empty(rows: usize, cols: usize) -> Self {
+            let data_frame = NNMatrix::alloc(rows, cols);
             NNMatrix {
                 data_frame,
-                row,
-                col,
-                stride: col,
+                rows,
+                cols,
+                stride: cols,
             }
         }
 
         pub fn get_at(&self, row: usize, col: usize) -> T {
-            assert!(row <= self.row && col <= self.col);
+            assert!(row <= self.rows && col <= self.cols);
             self.data_frame[row * self.stride + col]
         }
 
@@ -63,25 +64,25 @@ pub mod nn {
         }
 
         pub fn set_at(&mut self, row: usize, col: usize, value: T) {
-            assert!(row <= self.row && col <= self.col);
+            assert!(row <= self.rows && col <= self.cols);
             if let Some(elem) = self.data_frame.get_mut(row * self.stride + col) {
                 *elem = value;
             }
         }
 
-        pub fn rand_range(&mut self, min: T, max: T) {
+        pub fn rand_range(&mut self, range: ops::Range<T>) {
             let mut rng = rand::thread_rng();
-            for i in 0..self.row {
-                for j in 0..self.col {
-                    self.set_at(i, j, rng.gen_range(min..max));
+            for i in 0..self.rows {
+                for j in 0..self.cols {
+                    self.set_at(i, j, rng.gen_range(range.clone()));
                 }
             }
         }
 
         pub fn rand(&mut self) {
             let mut rng = rand::thread_rng();
-            for i in 0..self.row {
-                for j in 0..self.col {
+            for i in 0..self.rows {
+                for j in 0..self.cols {
                     self.set_at(i, j, rng.gen_range(0.0..1.0));
                 }
             }
@@ -89,12 +90,12 @@ pub mod nn {
 
         // pub fn product(&self, b: &NNMatrix, c: &mut NNMatrix) {
         //     let a: &NNMatrix = self;
-        //     let n = a.col;
+        //     let n = a.cols;
         //     let row = a.row;
-        //     let col = b.col;
-        //     assert!(a.col == b.row && a.row == c.row && b.col == c.col);
+        //     let cols = b.cols;
+        //     assert!(a.cols == b.row && a.row == c.row && b.cols == c.cols);
         //     for i in 0..row {
-        //         for j in 0..col {
+        //         for j in 0..cols {
         //             for k in 0..n {
         //                 *c.get_mut_at(i, j) += a.get_at(i, k) * b.get_at(k, j);
         //             }
@@ -103,35 +104,35 @@ pub mod nn {
         // }
 
         /// allocate contiguous space on heap for array.
-        fn alloc(row: usize, col: usize) -> Box<[T]> {
-            let v: Vec<T> = vec![0 as T; row * col];
+        fn alloc(rows: usize, cols: usize) -> Box<[T]> {
+            let v: Vec<T> = vec![0 as T; rows * cols];
             v.into_boxed_slice()
         }
 
         pub fn get_row(&self, row: usize) -> Box<[T]> {
             let row = row * self.stride;
-            self.data_frame[row..row + self.col]
+            self.data_frame[row..row + self.cols]
                 .to_owned()
                 .into_boxed_slice()
         }
 
         pub fn copy_row_to(&self, to: &mut NNMatrix, row: usize) {
-            assert!(to.col == self.col);
-            for i in 0..self.col {
-                *to.get_mut_at(row, i) = self.get_at(row, i);
+            assert!(to.cols == self.cols);
+            for i in 0..self.cols {
+                *to.get_mut_at(0, i) = self.get_at(row, i);
             }
         }
 
         pub fn copy_row_from(&mut self, from: &NNMatrix, row: usize) {
-            assert!(from.col == self.col);
-            for i in 0..self.col {
+            assert!(from.cols == self.cols);
+            for i in 0..self.cols {
                 *self.get_mut_at(0, i) = from.get_at(row, i);
             }
         }
 
         pub fn sigmoid(&mut self) {
-            for i in 0..self.row {
-                for j in 0..self.col {
+            for i in 0..self.rows {
+                for j in 0..self.cols {
                     *self.get_mut_at(i, j) = sigmoid(self.get_at(i, j));
                 }
             }
@@ -145,11 +146,11 @@ pub mod nn {
     impl Mul<T> for &NNMatrix {
         type Output = NNMatrix;
         fn mul(self, b: T) -> NNMatrix {
-            let row = self.row;
-            let col = self.col;
-            let mut c = NNMatrix::empty(row, col);
-            for i in 0..row {
-                for j in 0..col {
+            let rows = self.rows;
+            let cols = self.cols;
+            let mut c = NNMatrix::empty(rows, cols);
+            for i in 0..rows {
+                for j in 0..cols {
                     *c.get_mut_at(i, j) = self.get_at(i, j) * b;
                 }
             }
@@ -160,15 +161,15 @@ pub mod nn {
     impl Mul<&NNMatrix> for &NNMatrix {
         type Output = NNMatrix;
         fn mul(self, b: &NNMatrix) -> Self::Output {
-            let mut c = NNMatrix::empty(self.row, b.col);
-            assert!(self.col == b.row);
-            assert!(self.row == c.row);
-            assert!(b.col == c.col);
-            let n = self.col;
-            let row = self.row;
-            let col = b.col;
-            for i in 0..row {
-                for j in 0..col {
+            let mut c = NNMatrix::empty(self.rows, b.cols);
+            assert!(self.cols == b.rows);
+            assert!(self.rows == c.rows);
+            assert!(b.cols == c.cols);
+            let n = self.cols;
+            let rows = self.rows;
+            let cols = b.cols;
+            for i in 0..rows {
+                for j in 0..cols {
                     for k in 0..n {
                         *c.get_mut_at(i, j) += self.get_at(i, k) * b.get_at(k, j);
                     }
@@ -182,13 +183,13 @@ pub mod nn {
     impl Mul<NNMatrix> for &NNMatrix {
         type Output = NNMatrix;
         fn mul(self, b: NNMatrix) -> Self::Output {
-            let mut c = NNMatrix::empty(self.row, b.col);
-            assert!(self.col == b.row && self.row == c.row && b.col == c.col);
-            let n = self.col;
-            let row = self.row;
-            let col = b.col;
-            for i in 0..row {
-                for j in 0..col {
+            let mut c = NNMatrix::empty(self.rows, b.cols);
+            assert!(self.cols == b.rows && self.rows == c.rows && b.cols == c.cols);
+            let n = self.cols;
+            let rows = self.rows;
+            let cols = b.cols;
+            for i in 0..rows {
+                for j in 0..cols {
                     for k in 0..n {
                         *c.get_mut_at(i, j) += self.get_at(i, k) * b.get_at(k, j);
                     }
@@ -202,10 +203,10 @@ pub mod nn {
     /// scaler product assign
     impl MulAssign<T> for NNMatrix {
         fn mul_assign(&mut self, b: T) {
-            let row = self.row;
-            let col = self.col;
-            for i in 0..row {
-                for j in 0..col {
+            let rows = self.rows;
+            let cols = self.cols;
+            for i in 0..rows {
+                for j in 0..cols {
                     *self.get_mut_at(i, j) *= b;
                 }
             }
@@ -215,20 +216,20 @@ pub mod nn {
     /// dot product assign
     impl MulAssign<NNMatrix> for NNMatrix {
         fn mul_assign(&mut self, b: NNMatrix) {
-            let mut c = NNMatrix::empty(self.row, b.col);
-            assert!(self.col == b.row && self.row == c.row && b.col == c.col);
-            let n = self.col;
-            let row = self.row;
-            let col = b.col;
-            for i in 0..row {
-                for j in 0..col {
+            let mut c = NNMatrix::empty(self.rows, b.cols);
+            assert!(self.cols == b.rows && self.rows == c.rows && b.cols == c.cols);
+            let n = self.cols;
+            let rows = self.rows;
+            let cols = b.cols;
+            for i in 0..rows {
+                for j in 0..cols {
                     for k in 0..n {
                         *c.get_mut_at(i, j) += self.get_at(i, k) * b.get_at(k, j);
                     }
                 }
             }
-            for i in 0..row {
-                for j in 0..col {
+            for i in 0..rows {
+                for j in 0..cols {
                     *self.get_mut_at(i, j) = c.get_at(i, j);
                 }
             }
@@ -239,20 +240,20 @@ pub mod nn {
     /// dot product assign
     impl MulAssign<&NNMatrix> for NNMatrix {
         fn mul_assign(&mut self, b: &NNMatrix) {
-            let mut c = NNMatrix::empty(self.row, b.col);
-            assert!(self.col == b.row && self.row == c.row && b.col == c.col);
-            let n = self.col;
-            let row = self.row;
-            let col = b.col;
-            for i in 0..row {
-                for j in 0..col {
+            let mut c = NNMatrix::empty(self.rows, b.cols);
+            assert!(self.cols == b.rows && self.rows == c.rows && b.cols == c.cols);
+            let n = self.cols;
+            let rows = self.rows;
+            let cols = b.cols;
+            for i in 0..rows {
+                for j in 0..cols {
                     for k in 0..n {
                         *c.get_mut_at(i, j) += self.get_at(i, k) * b.get_at(k, j);
                     }
                 }
             }
-            for i in 0..row {
-                for j in 0..col {
+            for i in 0..rows {
+                for j in 0..cols {
                     *self.get_mut_at(i, j) = c.get_at(i, j);
                 }
             }
@@ -265,9 +266,9 @@ pub mod nn {
     impl Add<T> for &NNMatrix {
         type Output = NNMatrix;
         fn add(self, b: T) -> Self::Output {
-            let mut c = NNMatrix::empty(self.row, self.col);
-            for i in 0..self.row {
-                for j in 0..self.col {
+            let mut c = NNMatrix::empty(self.rows, self.cols);
+            for i in 0..self.rows {
+                for j in 0..self.cols {
                     *c.get_mut_at(i, j) = self.get_at(i, j) + b;
                 }
             }
@@ -279,11 +280,11 @@ pub mod nn {
     impl Add<NNMatrix> for &NNMatrix {
         type Output = NNMatrix;
         fn add(self, b: NNMatrix) -> Self::Output {
-            assert!(self.col == b.col);
-            assert!(self.row == b.row);
-            let mut c = NNMatrix::empty(self.row, self.col);
-            for i in 0..self.row {
-                for j in 0..self.col {
+            assert!(self.cols == b.cols);
+            assert!(self.rows == b.rows);
+            let mut c = NNMatrix::empty(self.rows, self.cols);
+            for i in 0..self.rows {
+                for j in 0..self.cols {
                     *c.get_mut_at(i, j) = self.get_at(i, j) + b.get_at(i, j);
                 }
             }
@@ -295,10 +296,10 @@ pub mod nn {
     /// matrix add assign
     impl AddAssign<NNMatrix> for NNMatrix {
         fn add_assign(&mut self, rhs: NNMatrix) {
-            assert!(self.col == rhs.col);
-            assert!(self.row == rhs.row);
-            for i in 0..self.row {
-                for j in 0..self.col {
+            assert!(self.cols == rhs.cols);
+            assert!(self.rows == rhs.rows);
+            for i in 0..self.rows {
+                for j in 0..self.cols {
                     *self.get_mut_at(i, j) += rhs.get_at(i, j);
                 }
             }
@@ -308,10 +309,10 @@ pub mod nn {
     /// matrix add assign
     impl AddAssign<&NNMatrix> for NNMatrix {
         fn add_assign(&mut self, rhs: &NNMatrix) {
-            assert!(self.col == rhs.col);
-            assert!(self.row == rhs.row);
-            for i in 0..self.row {
-                for j in 0..self.col {
+            assert!(self.cols == rhs.cols);
+            assert!(self.rows == rhs.rows);
+            for i in 0..self.rows {
+                for j in 0..self.cols {
                     *self.get_mut_at(i, j) += rhs.get_at(i, j);
                 }
             }
@@ -321,8 +322,8 @@ pub mod nn {
     /// scaler matrix add assign
     impl AddAssign<T> for NNMatrix {
         fn add_assign(&mut self, rhs: T) {
-            for i in 0..self.row {
-                for j in 0..self.col {
+            for i in 0..self.rows {
+                for j in 0..self.cols {
                     *self.get_mut_at(i, j) += rhs;
                 }
             }
@@ -333,17 +334,17 @@ pub mod nn {
     // ====================== display trait start ==================================== //
     impl fmt::Display for NNMatrix {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
-            assert!(self.row * self.col <= self.data_frame.len());
+            assert!(self.rows * self.cols <= self.data_frame.len());
             writeln!(
                 f,
-                "-- {row} rows, {col} columns --",
-                row = self.row,
-                col = self.col
+                "-- {rows} rows, {cols} columns --",
+                rows = self.rows,
+                cols = self.cols
             )
             .unwrap();
-            for row in 0..self.row {
-                for col in 0..self.col {
-                    write!(f, " {num}", num = self.get_at(row, col)).unwrap();
+            for rows in 0..self.rows {
+                for cols in 0..self.cols {
+                    write!(f, " {num}", num = self.get_at(rows, cols)).unwrap();
                 }
                 writeln!(f, "").unwrap();
             }
@@ -353,55 +354,92 @@ pub mod nn {
     }
     // ====================== display trait end ==================================== //
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug)]
     pub struct NNArch {
-        // /// activation layers
-        // al: Box<[NNMatrix]>,
-        // /// weights layers
-        // wl: Box<[NNMatrix]>,
-        // /// biases layers
-        // bl: Box<[NNMatrix]>,
+        /// the number of layers in the architecture excluding input
+        pub layer_count: usize,
 
+        /// activation layers
+        /// the amount of activations will be number of layers + 1 as first activation layer(a0) will be the input.
+        pub al: Box<[NNMatrix]>,
+
+        /// weights layers
+        /// the amount of weights will be number of layers
+        pub wl: Box<[NNMatrix]>,
+
+        /// biases layers
+        /// the amount of biases will be number of layers
+        pub bl: Box<[NNMatrix]>,
         // input
-        pub a0: NNMatrix,
+        // pub a0: NNMatrix,
 
         // layer 1
-        pub w1: NNMatrix,
-        pub b1: NNMatrix,
-        pub a1: NNMatrix,
+        // pub w1: NNMatrix,
+        // pub b1: NNMatrix,
+        // pub a1: NNMatrix,
 
         // layer 2
-        pub w2: NNMatrix,
-        pub b2: NNMatrix,
-        pub a2: NNMatrix,
+        // pub w2: NNMatrix,
+        // pub b2: NNMatrix,
+        // pub a2: NNMatrix,
     }
 
     impl NNArch {
-        pub fn new() -> Self {
-            let a0: NNMatrix = NNMatrix::empty(1, 2);
+        /// layer_arch will have first layer as input column size, then multiple hiden layers size
+        /// and last layer will be output layer size.
+        pub fn new(layer_arch: &[usize]) -> Self {
+            println!("{layer_arch:?}");
+            assert!(layer_arch.len() >= 2);
+            let layer_count = layer_arch.len() - 1;
+            let mut al: Vec<NNMatrix> = Vec::new();
+            let mut wl: Vec<NNMatrix> = Vec::new();
+            let mut bl: Vec<NNMatrix> = Vec::new();
 
-            let mut w1: NNMatrix = NNMatrix::empty(2, 2);
-            let mut b1: NNMatrix = NNMatrix::empty(1, 2);
-            let a1: NNMatrix = NNMatrix::empty(1, 2);
+            // create input layer
+            let a0: NNMatrix = NNMatrix::empty(1, layer_arch[0]);
+            al.push(a0);
 
-            let mut w2: NNMatrix = NNMatrix::empty(2, 1);
-            let mut b2: NNMatrix = NNMatrix::empty(1, 1);
-            let a2: NNMatrix = NNMatrix::empty(1, 1);
+            // create rest of the layers
+            for i in 1..=layer_count {
+                let w: NNMatrix = NNMatrix::empty(al[i - 1].cols, layer_arch[i]);
+                let b: NNMatrix = NNMatrix::empty(1, layer_arch[i]);
+                let a: NNMatrix = NNMatrix::empty(1, layer_arch[i]);
 
-            w1.rand();
-            b1.rand();
+                // push matrix into the layers.
+                al.push(a);
+                bl.push(b);
+                wl.push(w);
+            }
 
-            w2.rand();
-            b2.rand();
+            // convert vectors into boxed slices.
+            let al = al.into_boxed_slice();
+            let bl = bl.into_boxed_slice();
+            let wl = wl.into_boxed_slice();
 
+            // return the neural network architecture.
             NNArch {
-                a0,
-                w1,
-                b1,
-                a1,
-                w2,
-                b2,
-                a2,
+                layer_count,
+                al,
+                bl,
+                wl,
+                // a0, w1, b1, a1, w2, b2, a2,
+            }
+        }
+
+        pub fn randomize_range(&mut self, range: ops::Range<T>) {
+            for m in self.wl.iter_mut() {
+                m.rand_range(range.clone());
+            }
+            for m in self.bl.iter_mut() {
+                m.rand_range(range.clone());
+            }
+        }
+        pub fn randomize(&mut self) {
+            for m in self.wl.iter_mut() {
+                m.rand();
+            }
+            for m in self.bl.iter_mut() {
+                m.rand();
             }
         }
 
@@ -418,43 +456,27 @@ pub mod nn {
 
             let cost = self.calc_cost(df_input, df_output);
 
-            for i in 0..self.w1.row {
-                for j in 0..self.w1.col {
-                    saved = self.w1.get_at(i, j);
-                    *self.w1.get_mut_at(i, j) += eps;
-                    *gradient.w1.get_mut_at(i, j) =
-                        (self.calc_cost(df_input, df_output) - cost) / eps;
-                    *self.w1.get_mut_at(i, j) = saved;
+            for i in 0..self.layer_count {
+                for row in 0..self.wl[i].rows {
+                    for col in 0..self.wl[i].cols {
+                        saved = self.wl[i].get_at(row, col);
+                        *self.wl[i].get_mut_at(row, col) += eps;
+                        *gradient.wl[i].get_mut_at(row, col) =
+                            (self.calc_cost(df_input, df_output) - cost) / eps;
+                        *self.wl[i].get_mut_at(row, col) = saved;
+                    }
                 }
             }
 
-            for i in 0..self.b1.row {
-                for j in 0..self.b1.col {
-                    saved = self.b1.get_at(i, j);
-                    *self.b1.get_mut_at(i, j) += eps;
-                    *gradient.b1.get_mut_at(i, j) =
-                        (self.calc_cost(df_input, df_output) - cost) / eps;
-                    *self.b1.get_mut_at(i, j) = saved;
-                }
-            }
-
-            for i in 0..self.w2.row {
-                for j in 0..self.w2.col {
-                    saved = self.w2.get_at(i, j);
-                    *self.w2.get_mut_at(i, j) += eps;
-                    *gradient.w2.get_mut_at(i, j) =
-                        (self.calc_cost(df_input, df_output) - cost) / eps;
-                    *self.w2.get_mut_at(i, j) = saved;
-                }
-            }
-
-            for i in 0..self.b2.row {
-                for j in 0..self.b2.col {
-                    saved = self.b2.get_at(i, j);
-                    *self.b2.get_mut_at(i, j) += eps;
-                    *gradient.b2.get_mut_at(i, j) =
-                        (self.calc_cost(df_input, df_output) - cost) / eps;
-                    *self.b2.get_mut_at(i, j) = saved;
+            for i in 0..self.layer_count {
+                for row in 0..self.bl[i].rows {
+                    for col in 0..self.bl[i].cols {
+                        saved = self.bl[i].get_at(row, col);
+                        *self.bl[i].get_mut_at(row, col) += eps;
+                        *gradient.bl[i].get_mut_at(row, col) =
+                            (self.calc_cost(df_input, df_output) - cost) / eps;
+                        *self.bl[i].get_mut_at(row, col) = saved;
+                    }
                 }
             }
         }
@@ -463,50 +485,53 @@ pub mod nn {
         /// model(w_n) -= gradient(w_n) * rate
         /// model(b_n) -= gradient(b_n) * rate
         pub fn learn(&mut self, gradient: &NNArch, rate: T) {
-            for i in 0..self.w1.row {
-                for j in 0..self.w1.col {
-                    *self.w1.get_mut_at(i, j) -= rate * gradient.w1.get_at(i, j);
+            for i in 0..self.layer_count {
+                for row in 0..self.wl[i].rows {
+                    for col in 0..self.wl[i].cols {
+                        *self.wl[i].get_mut_at(row, col) -= rate * gradient.wl[i].get_at(row, col);
+                    }
                 }
             }
-
-            for i in 0..self.b1.row {
-                for j in 0..self.b1.col {
-                    *self.b1.get_mut_at(i, j) -= rate * gradient.b1.get_at(i, j);
-                }
-            }
-
-            for i in 0..self.w2.row {
-                for j in 0..self.w2.col {
-                    *self.w2.get_mut_at(i, j) -= rate * gradient.w2.get_at(i, j);
-                }
-            }
-
-            for i in 0..self.b2.row {
-                for j in 0..self.b2.col {
-                    *self.b2.get_mut_at(i, j) -= rate * gradient.b2.get_at(i, j);
+            for i in 0..self.layer_count {
+                for row in 0..self.bl[i].rows {
+                    for col in 0..self.bl[i].cols {
+                        *self.bl[i].get_mut_at(row, col) -= rate * gradient.bl[i].get_at(row, col);
+                    }
                 }
             }
         }
 
         pub fn forward(&mut self) {
-            self.a1 = &self.a0 * &self.w1;
-            self.a1 += &self.b1;
-            self.a1.sigmoid();
-            self.a2 = &self.a1 * &self.w2;
-            self.a2 += &self.b2;
-            self.a2.sigmoid();
+            for i in 0..self.layer_count {
+                self.al[i + 1] = &self.al[i] * &self.wl[i];
+                self.al[i + 1] += &self.bl[i];
+                self.al[i + 1].sigmoid();
+            }
         }
 
         pub fn calc_cost(&mut self, df_input: &NNMatrix, df_output: &NNMatrix) -> T {
             let mut cost: T = 0.0;
-            for i in 0..df_input.row {
-                self.a0.copy_row_from(df_input, i);
+            for i in 0..df_input.rows {
+                self.al[0].copy_row_from(df_input, i);
                 self.forward();
-                let result: T = self.a2.get_at(0, 0);
+                let result: T = self.al[self.layer_count].get_at(0, 0);
                 let o0: T = df_output.get_at(i, 0);
                 cost += (o0 - result) * (o0 - result);
             }
-            cost / (df_input.row as T)
+            cost / (df_input.rows as T)
+        }
+
+        pub fn check_output(&mut self, df_input: &NNMatrix, df_output: &NNMatrix) {
+            for i in 0..df_input.rows {
+                self.al[0].copy_row_from(df_input, i);
+                self.forward();
+                println!(
+                    "{input:?}: {actual} | {expected}",
+                    input = df_input.get_row(i),
+                    actual = self.al[self.layer_count].get_at(0, 0),
+                    expected = df_output.get_at(i, 0)
+                );
+            }
         }
     }
 
