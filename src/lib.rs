@@ -426,6 +426,18 @@ pub mod nn {
             }
         }
 
+        pub fn get_input(&self) -> Box<&NNMatrix> {
+            Box::new(&self.al[0])
+        }
+
+        pub fn get_input_mut(&mut self) -> Box<&mut NNMatrix> {
+            Box::new(&mut self.al[0])
+        }
+
+        pub fn get_output(&self) -> Box<&NNMatrix> {
+            Box::new(&self.al[self.layer_count])
+        }
+
         pub fn randomize_range(&mut self, range: ops::Range<T>) {
             for m in self.wl.iter_mut() {
                 m.rand_range(range.clone());
@@ -454,7 +466,7 @@ pub mod nn {
         ) {
             let mut saved: T;
 
-            let cost = self.calc_cost(df_input, df_output);
+            let cost = self.cost(df_input, df_output);
 
             for i in 0..self.layer_count {
                 for row in 0..self.wl[i].rows {
@@ -462,7 +474,7 @@ pub mod nn {
                         saved = self.wl[i].get_at(row, col);
                         *self.wl[i].get_mut_at(row, col) += eps;
                         *gradient.wl[i].get_mut_at(row, col) =
-                            (self.calc_cost(df_input, df_output) - cost) / eps;
+                            (self.cost(df_input, df_output) - cost) / eps;
                         *self.wl[i].get_mut_at(row, col) = saved;
                     }
                 }
@@ -474,7 +486,7 @@ pub mod nn {
                         saved = self.bl[i].get_at(row, col);
                         *self.bl[i].get_mut_at(row, col) += eps;
                         *gradient.bl[i].get_mut_at(row, col) =
-                            (self.calc_cost(df_input, df_output) - cost) / eps;
+                            (self.cost(df_input, df_output) - cost) / eps;
                         *self.bl[i].get_mut_at(row, col) = saved;
                     }
                 }
@@ -509,26 +521,29 @@ pub mod nn {
             }
         }
 
-        pub fn calc_cost(&mut self, df_input: &NNMatrix, df_output: &NNMatrix) -> T {
+        pub fn cost(&mut self, df_input: &NNMatrix, df_output: &NNMatrix) -> T {
             let mut cost: T = 0.0;
             for i in 0..df_input.rows {
-                self.al[0].copy_row_from(df_input, i);
+                self.get_input_mut().copy_row_from(df_input, i);
                 self.forward();
-                let result: T = self.al[self.layer_count].get_at(0, 0);
-                let o0: T = df_output.get_at(i, 0);
-                cost += (o0 - result) * (o0 - result);
+                let result: Box<[T]> = self.get_output().get_row(0);
+                let output: Box<[T]> = df_output.get_row(i);
+                for col in 0..df_output.cols {
+                    let diff = output[col] - result[col];
+                    cost += diff * diff;
+                }
             }
             cost / (df_input.rows as T)
         }
 
         pub fn check_output(&mut self, df_input: &NNMatrix, df_output: &NNMatrix) {
             for i in 0..df_input.rows {
-                self.al[0].copy_row_from(df_input, i);
+                self.get_input_mut().copy_row_from(df_input, i);
                 self.forward();
                 println!(
                     "{input:?}: {actual:?} | {expected:?}",
                     input = df_input.get_row(i),
-                    actual = self.al[self.layer_count].get_row(0),
+                    actual = self.get_output().get_row(0),
                     expected = df_output.get_row(i)
                 );
             }

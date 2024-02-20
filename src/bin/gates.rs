@@ -36,7 +36,7 @@ fn main() {
     println!("model: {model}");
     println!(
         "initial cost: {cost}",
-        cost = model.calc_cost(&df_input, &df_output)
+        cost = model.cost(&df_input, &df_output)
     );
 
     for _ in 0..iters {
@@ -46,7 +46,7 @@ fn main() {
 
     println!(
         "updated cost: {cost}",
-        cost = model.calc_cost(&df_input, &df_output)
+        cost = model.cost(&df_input, &df_output)
     );
 
     model.check_output(&df_input, &df_output);

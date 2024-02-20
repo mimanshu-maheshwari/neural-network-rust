@@ -19,26 +19,22 @@
 \author{Mimanshu Maheshwari}
 
 
-\section{Gradient Descent}
+\section{Finite Differences}
 As the $\epsilon$ decrease in Finite Difference approach result is derivative of cost function.
 \begin{align}
 	C'(w) &= \lim_{\epsilon \to 0}\frac{C(w + \epsilon) - C(w)}{\epsilon}
 \end{align}
 
-\subsection{Cost function}
+\section{Cost function}
 Cost function is used to calculate the output of the network and using the output we can calculate how accurate the function is? \\
 Cost function for a single layer can be written as:
+\subsection{Cost Function for single neuron}
 \begin{align}
-	C &= \sum_{i = 1}^{n}{a_iw_i + b}
-\end{align}
-
-So for a layer cost function becomes: 
-\begin{align}
-	C^{l} = \sum_{i = 1}^{n}{a_{i}^{l}w_{i}^{l - 1} + b^{l}}
+	C(w) &= \frac{1}{n}\sum_{i=1}^{n}{\left(x_iw - y_i\right)^2} \\
+	C'(w) &= \frac{1}{n}\sum_{i=1}^{n}{2x\left(k_iw - y_i\right)}
 \end{align}
 
 
-\subsection{Linier Model}
 
 
 \end{document}

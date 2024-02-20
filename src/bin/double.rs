@@ -15,44 +15,47 @@ fn main() -> Result<()> {
 
     // initialize weights
     let mut w: f32 = rng.gen::<f32>();
-    let mut b: f32 = rng.gen::<f32>();
-    // small nudge to weights
-    let eps: f32 = 1e-3;
     // learning rate
-    let rate: f32 = 1e-3;
+    let rate: f32 = 1e-1;
 
-    for i in 0..500 {
+    for i in 0..10 {
         // calculate finite difference
         // finite difference =  lim h->0 (cost(a + h) - cost(a))/ h
-        let cost = calc_cost(&w, &b, &data_frame);
-        println!("{i}: cost={cost}"); //, w={w}, b={b}");
-        let finite_diff_w: f32 = (calc_cost(&(w + eps), &b, &data_frame) - cost) / eps;
-        let finite_diff_b: f32 = (calc_cost(&w, &(b + eps), &data_frame) - cost) / eps;
-        w -= rate * finite_diff_w;
-        b -= rate * finite_diff_b;
+        let dw = dcost(&w, &data_frame);
+        w -= rate * dw;
+        let cost = calc_cost(&w, &data_frame);
+        println!("{i}: cost={cost}, w={w}"); //, w={w}");
     }
     println!("--------------------------");
 
     for data in data_frame {
         let expected_output = data[1];
-        let actual_output = data[0] * w + b;
+        let actual_output = data[0] * w;
         println!("expected: {expected_output} -> actual: {actual_output}");
     }
 
     Ok(())
 }
 
-fn calc_cost(w: &f32, b: &f32, data_frame: &[[f32; 2]]) -> f32 {
+fn dcost(w: &f32, data_frame: &[[f32; 2]]) -> f32 {
     let mut result: f32 = 0f32;
     for data in data_frame {
         // a = nw + b;
-        let n = data[0];
-        let o = data[1];
-        let a = n * w + b;
-        result += (a - o).powi(2);
+        let x = data[0];
+        let y = data[1];
+        result += 2.0 * x * (x * w - y);
     }
 
     // get calc_cost
-    result /= data_frame.len() as f32;
-    result
+    result / data_frame.len() as f32
+}
+fn calc_cost(w: &f32, data_frame: &[[f32; 2]]) -> f32 {
+    let mut result: f32 = 0f32;
+    for data in data_frame {
+        let x = data[0];
+        let y = x * w;
+        let d = y - data[1];
+        result = d * d;
+    }
+    result / data_frame.len() as f32
 }
