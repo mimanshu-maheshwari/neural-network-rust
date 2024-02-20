@@ -18,13 +18,15 @@ fn main() -> Result<()> {
     // learning rate
     let rate: f32 = 1e-1;
 
-    for i in 0..10 {
-        // calculate finite difference
-        // finite difference =  lim h->0 (cost(a + h) - cost(a))/ h
+    for i in 0..50 {
+        
         let dw = dcost(&w, &data_frame);
         w -= rate * dw;
         let cost = calc_cost(&w, &data_frame);
-        println!("{i}: cost={cost}, w={w}"); //, w={w}");
+        println!("{i:-2}: cost={cost:-9.6}, w={w:-9.6}");
+        if cost == 0.0 {
+            break;
+        }
     }
     println!("--------------------------");
 
