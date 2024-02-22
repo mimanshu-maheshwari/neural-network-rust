@@ -137,6 +137,26 @@ pub mod nn {
                 }
             }
         }
+
+        pub fn zeroed(&mut self) {
+            for i in 0..self.rows {
+                for j in 0..self.cols {
+                    self.set_at(i, j, 0.0);
+                }
+            }
+        }
+
+        pub fn identity(rows: usize, cols:usize) -> NNMatrix {
+            let mut id_matrix: NNMatrix = NNMatrix::empty(rows, cols);
+            for i in 0..rows {
+                for j in 0..cols {
+                    if i == j {
+                        id_matrix.set_at(i, j, 1.0);
+                    }
+                }
+            }
+            id_matrix
+        }
     }
 
     // ====================== arithmetic ops start ==================================== //
@@ -370,25 +390,12 @@ pub mod nn {
         /// biases layers
         /// the amount of biases will be number of layers
         pub bl: Box<[NNMatrix]>,
-        // input
-        // pub a0: NNMatrix,
-
-        // layer 1
-        // pub w1: NNMatrix,
-        // pub b1: NNMatrix,
-        // pub a1: NNMatrix,
-
-        // layer 2
-        // pub w2: NNMatrix,
-        // pub b2: NNMatrix,
-        // pub a2: NNMatrix,
     }
 
     impl NNArch {
         /// layer_arch will have first layer as input column size, then multiple hiden layers size
         /// and last layer will be output layer size.
         pub fn create(layer_arch: &[usize]) -> Self {
-            println!("{layer_arch:?}");
             assert!(layer_arch.len() >= 2);
             let layer_count = layer_arch.len() - 1;
             let mut al: Vec<NNMatrix> = Vec::new();
@@ -422,7 +429,6 @@ pub mod nn {
                 al,
                 bl,
                 wl,
-                // a0, w1, b1, a1, w2, b2, a2,
             }
         }
 
@@ -436,6 +442,9 @@ pub mod nn {
 
         pub fn get_output(&self) -> Box<&NNMatrix> {
             Box::new(&self.al[self.layer_count])
+        }
+        pub fn get_output_mut(&mut self) -> Box<&mut NNMatrix> {
+            Box::new(&mut self.al[self.layer_count])
         }
 
         pub fn randomize_range(&mut self, range: ops::Range<T>) {
@@ -453,6 +462,15 @@ pub mod nn {
             for m in self.bl.iter_mut() {
                 m.rand();
             }
+        }
+
+        pub fn zeroed(&mut self){
+            for i in 0..self.layer_count {
+                self.al[i].zeroed();
+                self.wl[i].zeroed();
+                self.bl[i].zeroed();
+            }
+            self.al[self.layer_count].zeroed();
         }
 
         /// use finite difference method to create gradient value
@@ -513,6 +531,66 @@ pub mod nn {
             }
         }
 
+        pub fn backprop(
+            &mut self,
+            gradient: &mut NNArch,
+            df_input: &NNMatrix,
+            df_output: &NNMatrix,
+        ) {
+            assert!(df_input.rows == df_output.rows);
+            assert!(df_output.cols == self.get_output().cols);
+
+            let sample_rows: usize = df_input.rows;
+            gradient.zeroed();
+
+            // sr_index -> sample row index
+            // sc_index -> sample column index
+            // l_index -> layer index
+
+            for sr_index in 0..sample_rows {
+                self.get_input_mut().copy_row_from(df_input, sr_index);
+                self.forward();
+
+                for i in 0..=gradient.layer_count {
+                    gradient.al[i].zeroed();
+                }
+
+                for sc_index in 0..df_output.cols {
+                    *gradient.get_output_mut().get_mut_at(0, sc_index) =
+                        self.get_output().get_at(0, sc_index)
+                            - df_output.get_at(sr_index, sc_index);
+                }
+
+                for l_index in (1..=self.layer_count).rev() {
+                    for w_col in 0..self.al[l_index].cols {
+                        let a: T = self.al[l_index].get_at(0, w_col); 
+                        let da: T = gradient.al[l_index].get_at(0, w_col); 
+                        *gradient.bl[l_index - 1].get_mut_at(0, w_col) += 2.0 * da * a * (1.0 - a);
+                        for w_row in 0..self.al[l_index - 1].cols {
+                            let pa: T = self.al[l_index - 1].get_at(0, w_row);
+                            let w: T = self.wl[l_index - 1].get_at(w_row, w_col);
+                            *gradient.wl[l_index - 1].get_mut_at(w_row, w_col) += 2.0 * da * a * (1.0 - a)* pa;
+                            *gradient.al[l_index - 1].get_mut_at(0, w_row) += 2.0 * da * a * (1.0 - a)* w;
+                        }
+                    }
+                }
+                for l_index in 0..gradient.layer_count {
+                    for row in 0..gradient.wl[l_index].rows {
+                        for col in 0..gradient.wl[l_index].cols {
+                            *gradient.wl[l_index].get_mut_at(row, col) /= sample_rows as T;
+                        }
+                    }
+                }
+                for l_index in 0..gradient.layer_count {
+                    for row in 0..gradient.bl[l_index].rows {
+                        for col in 0..gradient.bl[l_index].cols {
+                            *gradient.bl[l_index].get_mut_at(row, col) /= sample_rows as T;
+                        }
+                    }
+                }
+            }
+        }
+
         pub fn forward(&mut self) {
             for i in 0..self.layer_count {
                 self.al[i + 1] = &self.al[i] * &self.wl[i];
@@ -525,9 +603,12 @@ pub mod nn {
             let mut cost: T = 0.0;
             for i in 0..df_input.rows {
                 self.get_input_mut().copy_row_from(df_input, i);
+
                 self.forward();
+
                 let result: Box<[T]> = self.get_output().get_row(0);
                 let output: Box<[T]> = df_output.get_row(i);
+
                 for col in 0..df_output.cols {
                     let diff = output[col] - result[col];
                     cost += diff * diff;
@@ -548,6 +629,7 @@ pub mod nn {
                 );
             }
         }
+
     }
     impl fmt::Display for NNArch {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {

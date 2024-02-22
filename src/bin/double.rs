@@ -19,7 +19,6 @@ fn main() -> Result<()> {
     let rate: f32 = 1e-1;
 
     for i in 0..50 {
-        
         let dw = dcost(&w, &data_frame);
         w -= rate * dw;
         let cost = calc_cost(&w, &data_frame);
