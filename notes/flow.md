@@ -17,3 +17,4 @@
     - [x] create NNArch with just a few parameters (Abstraction of logic)
     - [x] move the learn(), finite_diff(), calc_cost() functions to lib
 - [ ] create derivates for feed forward and back propogation
+- [ ] implement stochastic gradient
