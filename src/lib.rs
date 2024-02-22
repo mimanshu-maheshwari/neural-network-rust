@@ -443,6 +443,7 @@ pub mod nn {
         pub fn get_output(&self) -> Box<&NNMatrix> {
             Box::new(&self.al[self.layer_count])
         }
+
         pub fn get_output_mut(&mut self) -> Box<&mut NNMatrix> {
             Box::new(&mut self.al[self.layer_count])
         }
@@ -455,6 +456,7 @@ pub mod nn {
                 m.rand_range(range.clone());
             }
         }
+
         pub fn randomize(&mut self) {
             for m in self.wl.iter_mut() {
                 m.rand();
@@ -541,6 +543,7 @@ pub mod nn {
             assert!(df_output.cols == self.get_output().cols);
 
             let sample_rows: usize = df_input.rows;
+
             gradient.zeroed();
 
             // sr_index -> sample row index
@@ -549,6 +552,7 @@ pub mod nn {
 
             for sr_index in 0..sample_rows {
                 self.get_input_mut().copy_row_from(df_input, sr_index);
+
                 self.forward();
 
                 for i in 0..=gradient.layer_count {
@@ -557,8 +561,7 @@ pub mod nn {
 
                 for sc_index in 0..df_output.cols {
                     *gradient.get_output_mut().get_mut_at(0, sc_index) =
-                        self.get_output().get_at(0, sc_index)
-                            - df_output.get_at(sr_index, sc_index);
+                        self.get_output().get_at(0, sc_index) - df_output.get_at(sr_index, sc_index);
                 }
 
                 for l_index in (1..=self.layer_count).rev() {
