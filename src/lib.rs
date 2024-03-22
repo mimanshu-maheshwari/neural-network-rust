@@ -146,7 +146,7 @@ pub mod nn {
             }
         }
 
-        pub fn identity(rows: usize, cols:usize) -> NNMatrix {
+        pub fn identity(rows: usize, cols: usize) -> NNMatrix {
             let mut id_matrix: NNMatrix = NNMatrix::empty(rows, cols);
             for i in 0..rows {
                 for j in 0..cols {
@@ -466,7 +466,7 @@ pub mod nn {
             }
         }
 
-        pub fn zeroed(&mut self){
+        pub fn zeroed(&mut self) {
             for i in 0..self.layer_count {
                 self.al[i].zeroed();
                 self.wl[i].zeroed();
@@ -561,19 +561,22 @@ pub mod nn {
 
                 for sc_index in 0..df_output.cols {
                     *gradient.get_output_mut().get_mut_at(0, sc_index) =
-                        self.get_output().get_at(0, sc_index) - df_output.get_at(sr_index, sc_index);
+                        self.get_output().get_at(0, sc_index)
+                            - df_output.get_at(sr_index, sc_index);
                 }
 
                 for l_index in (1..=self.layer_count).rev() {
                     for w_col in 0..self.al[l_index].cols {
-                        let a: T = self.al[l_index].get_at(0, w_col); 
-                        let da: T = gradient.al[l_index].get_at(0, w_col); 
+                        let a: T = self.al[l_index].get_at(0, w_col);
+                        let da: T = gradient.al[l_index].get_at(0, w_col);
                         *gradient.bl[l_index - 1].get_mut_at(0, w_col) += 2.0 * da * a * (1.0 - a);
                         for w_row in 0..self.al[l_index - 1].cols {
                             let pa: T = self.al[l_index - 1].get_at(0, w_row);
                             let w: T = self.wl[l_index - 1].get_at(w_row, w_col);
-                            *gradient.wl[l_index - 1].get_mut_at(w_row, w_col) += 2.0 * da * a * (1.0 - a)* pa;
-                            *gradient.al[l_index - 1].get_mut_at(0, w_row) += 2.0 * da * a * (1.0 - a)* w;
+                            *gradient.wl[l_index - 1].get_mut_at(w_row, w_col) +=
+                                2.0 * da * a * (1.0 - a) * pa;
+                            *gradient.al[l_index - 1].get_mut_at(0, w_row) +=
+                                2.0 * da * a * (1.0 - a) * w;
                         }
                     }
                 }
@@ -632,7 +635,6 @@ pub mod nn {
                 );
             }
         }
-
     }
     impl fmt::Display for NNArch {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {

@@ -41,7 +41,7 @@ fn main() {
         // model.finite_diff(&mut gradient, &df_input, &df_output, _eps);
         model.backprop(&mut gradient, &df_input, &df_output);
         model.learn(&mut gradient, rate);
-        println!( "cost: {cost}", cost = model.cost(&df_input, &df_output));
+        println!("cost: {cost}", cost = model.cost(&df_input, &df_output));
     }
 
     // println!( "updated cost: {cost}", cost = model.cost(&df_input, &df_output));
