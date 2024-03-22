@@ -18,3 +18,10 @@ path = "src/bin/double.rs"
 name = "mm-nn"
 path = "src/main.rs"
 
+[lib]
+name = "lib" 
+path = "src/lib.rs"
+
+[[test]]
+name = "nn_test"
+path = "tests/nn-test.rs"

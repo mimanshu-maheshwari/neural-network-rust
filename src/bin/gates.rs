@@ -1,4 +1,4 @@
-use mm_nn::nn::{NNArch, NNMatrix, T};
+use lib::nn::{NNArch, NNMatrix, T};
 use std::env;
 
 fn main() {
