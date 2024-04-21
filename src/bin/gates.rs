@@ -1,4 +1,4 @@
-use lib::nn::{NNArch, NNMatrix, T};
+use nn::{NNArch, NNMatrix, T};
 use std::env;
 
 fn main() {
@@ -40,7 +40,7 @@ fn main() {
     for _ in 0..iters {
         // model.finite_diff(&mut gradient, &df_input, &df_output, _eps);
         model.backprop(&mut gradient, &df_input, &df_output);
-        model.learn(&mut gradient, rate);
+        model.learn(&gradient, rate);
         println!("cost: {cost}", cost = model.cost(&df_input, &df_output));
     }
 

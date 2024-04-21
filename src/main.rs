@@ -1,4 +1,4 @@
-use lib::nn::NNArch;
+use nn::NNArch;
 fn main() {
     let mut a: NNArch = NNArch::create(&vec![3, 3, 2][..]);
     a.randomize_range(0.0..20.0);

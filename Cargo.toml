@@ -1,8 +1,8 @@
 [package]
-name = "mm-nn"
+name = "nn"
 version = "0.1.0"
 edition = "2021"
-#default-run = "mm-nn"
+#default-run = "nn"
 default-run = "gates"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -17,10 +17,6 @@ path = "src/bin/double.rs"
 [[bin]]
 name = "mm-nn"
 path = "src/main.rs"
-
-[lib]
-name = "lib" 
-path = "src/lib.rs"
 
 [[test]]
 name = "nn_test"

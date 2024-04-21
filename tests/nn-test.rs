@@ -2,7 +2,7 @@
 mod nn {
 
     mod math {
-        use lib::nn::sigmoid;
+        use nn::sigmoid;
         #[test]
         fn sigmoid_test_0() {
             let actual = sigmoid(0_f32);
